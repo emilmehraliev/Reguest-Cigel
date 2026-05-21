@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Бриллиантовая рука — Инфо и игра</title>
+<style>
+  :root{ --bg:#0a1f44; --panel:#08314a; --accent:#ffb300; --player:#ffb86b; --coin:#ffd84d; color-scheme: dark; }
+  html,body{height:100%; margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:#fff; -webkit-font-smoothing:antialiased;}
+  .center{display:flex; align-items:center; justify-content:center;}
+  .container{max-width:700px; margin:18px auto; padding:12px; box-sizing:border-box; text-align:center;}
+  .carousel{position:relative; width:100%; max-width:680px; height:200px; margin:0 auto 14px; border-radius:12px; overflow:hidden; box-shadow:0 6px 22px rgba(0,0,0,.45);}
+  .carousel img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .8s ease;}
+  .carousel img.active{opacity:1;}
+  .info-box{background:rgba(8,17,34,0.6); padding:14px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.5); text-align:left; max-width:680px; margin:0 auto 12px;}
+  .info-box strong{display:block; font-size:20px; margin-bottom:8px;}
+  .controls-row{display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap;}
+  button.btn{appearance:none; -webkit-appearance:none; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none;
+    cursor:pointer; border:0; border-radius:14px; padding:12px 18px; font-weight:700;}
+  button.primary{background:var(--accent); color:#072033;}
+  button.secondary{background:rgba(255,255,255,0.06); color:#fff; border:1px solid rgba(255,255,255,0.04);}
+
+  .lang-buttons{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    align-items:center;
+    margin-top:25px;
+  }
+
+  .lang-buttons button{
+    width:220px;
+  }
+
+  #gameWrap{display:none; width:90vw; max-width:420px; margin:14px auto; background:linear-gradient(180deg,#052235,#08314a); border-radius:12px; overflow:hidden; height:66vh; position:relative; box-shadow:0 8px 30px rgba(0,0,0,.6);}
+  #player{position:absolute; width:52px; height:52px; border-radius:10px; background:var(--player); display:flex; align-items:center; justify-content:center; font-size:28px; touch-action:none;}
+  .coin{position:absolute; width:44px; height:44px; border-radius:50%; background:var(--coin); display:flex; align-items:center; justify-content:center; font-size:22px; will-change:transform,top;}
+  #hud{display:flex; gap:12px; justify-content:center; padding:10px; color:#fff; font-weight:700;}
+  #controls{display:flex; gap:10px; justify-content:center; padding:8px;}
+  .ctl{width:60px; height:50px; border-radius:10px; background:rgba(255,255,255,0.06); color:#fff; border:0; font-size:20px; user-select:none; -webkit-user-select:none;}
+
+  #winOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.75);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    transition:.5s;
+    z-index:999;
+  }
+
+  #winOverlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .winBox{
+    background:linear-gradient(135deg,#ffd24d,#ff9f1c);
+    color:#3a2400;
+    padding:32px 26px;
+    border-radius:22px;
+    box-shadow:0 20px 50px rgba(0,0,0,.7);
+    max-width:320px;
+    width:90%;
+    text-align:center;
+  }
+
+  .winBox h2{
+    font-size:34px;
+    margin:10px 0;
+  }
+
+  .winBox p{
+    font-size:20px;
+    margin-bottom:18px;
+  }
+
+  .winBox button{
+    background:#3a2400;
+    color:#fff;
+    border:none;
+    border-radius:14px;
+    padding:14px 22px;
+    font-size:18px;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  .crown{
+    font-size:56px;
+  }
+
+  @media (max-width:520px){
+    .carousel{height:160px;}
+    .ctl{width:48px; height:44px;}
+    #player{width:44px; height:44px; font-size:22px;}
+    .coin{width:38px; height:38px; font-size:18px;}
+  }
+</style>
+</head>
+
+<body>
+
+<div class="container" id="languageScreen">
+  <h1 id="languageTitle">🌍 Выберите язык</h1>
+
+  <div class="lang-buttons">
+    <button class="btn primary" onclick="chooseLanguage('ru')">Русский</button>
+    <button class="btn primary" onclick="chooseLanguage('en')">English</button>
+    <button class="btn primary" onclick="chooseLanguage('az')">Azərbaycanca</button>
+  </div>
+</div>
+
+<div class="container" id="mainContent" style="display:none;">
+  <div class="carousel" id="carousel">
+    <img src="https://s0.rbk.ru/v6_top_pics/media/img/6/06/756723079004066.png" class="active" alt="">
+    <img src="https://azerhistory.com/wp-content/uploads/2018/01/32.jpg" alt="">
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwOTb2UCFFI_FLnnFIQMx2xuhiSzMXP2MfLQ&s" alt="">
+  </div>
+
+  <div class="info-box" id="infoBox">
+    <strong id="infoTitle"></strong>
+    <div id="infoText"></div>
+  </div>
+
+  <div class="controls-row">
+    <button id="readBtn" class="btn primary"></button>
+    <button id="startBtn" class="btn primary" style="display:none;"></button>
+  </div>
+</div>
+
+<div id="gameWrap" class="center">
+  <div id="gameInner" style="position:relative; width:100%; height:100%;">
+    <div id="player">🦁</div>
+  </div>
+</div>
+
+<div id="hud" style="display:none;">
+  <div id="score"></div>
+</div>
+
+<div id="controls" style="display:none;">
+  <button id="leftBtn" class="ctl">←</button>
+  <button id="rightBtn" class="ctl">→</button>
+</div>
+
+<div id="winOverlay">
+  <div class="winBox">
+    <div class="crown">👑</div>
+    <h2 id="winTitle"></h2>
+    <p id="winText"></p>
+    <button id="playAgainBtn" onclick="location.reload()"></button>
+  </div>
+</div>
+
+<script>
+const translations = {
+  ru: {
+    languageTitle: "🌍 Выберите язык",
+    infoTitle: "Бриллиантовая рука",
+    infoText: `«Цыцель-Цыгель, Ай-Лю-Лю» — это смешная фраза из комедии «Бриллиантовая рука». Она ничего не значит, но звучит забавно.
+
+Фильм снят в 1969 году режиссёром Леонидом Гайдаем. В нём играют Юрий Никулин, Андрей Миронов, Анатолий Папанов, Нонна Мордюкова и Георгий Вицин.
+
+Многие сцены снимались в Баку, Сочи и Москве. Часть фильма снимали в Баку, в районе Морвокзала. Там проходила сцена, где герой Миронова бежит по набережной и прыгает на катер — это одно из самых узнаваемых мест фильма.`,
+    readBtn: "Узнать про Бриллиантовую руку",
+    reading: "Читаю...",
+    startBtn: "Начать игру",
+    coins: "Монеты",
+    winTitle: "Поздравляем!",
+    winText: "Вы собрали все монеты!",
+    playAgain: "Играть снова",
+    speechLang: "ru-RU"
+  },
+
+  en: {
+    languageTitle: "🌍 Choose language",
+    infoTitle: "The Diamond Arm",
+    infoText: `“Tsitsel-Tsigel, Ai-Liu-Liu” is a funny phrase from the comedy film “The Diamond Arm”. It does not really mean anything, but it sounds humorous and memorable.
+
+The film was released in 1969 and directed by Leonid Gaidai. It stars Yuri Nikulin, Andrei Mironov, Anatoly Papanov, Nonna Mordyukova and Georgy Vitsin.
+
+Many scenes were filmed in Baku, Sochi and Moscow. Part of the movie was filmed in Baku near the seaport area. One famous scene shows Mironov’s character running along the embankment and jumping onto a boat — one of the most recognizable moments connected with the film.`,
+    readBtn: "Learn about The Diamond Arm",
+    reading: "Reading...",
+    startBtn: "Start game",
+    coins: "Coins",
+    winTitle: "Congratulations!",
+    winText: "You collected all the coins!",
+    playAgain: "Play again",
+    speechLang: "en-US"
+  },
+
+  az: {
+    languageTitle: "🌍 Dil seçin",
+    infoTitle: "Brilyant əl",
+    infoText: `“Tsitsel-Tsigel, Ay-Lyu-Lyu” — “Brilyant əl” komediyasından məşhur və gülməli bir ifadədir. Bu ifadənin xüsusi mənası yoxdur, amma çox yadda qalan və məzəli səslənir.
+
+Film 1969-cu ildə rejissor Leonid Qayday tərəfindən çəkilib. Filmdə Yuri Nikulin, Andrey Mironov, Anatoli Papanov, Nonna Mordyukova və Georgi Vitsin rol alıblar.
+
+Filmin bir çox səhnələri Bakıda, Soçidə və Moskvada çəkilib. Bakıda çəkilən hissələrdən biri Dəniz vağzalı ərazisindədir. Orada Mironovun qəhrəmanı sahil boyunca qaçır və katerə tullanır — bu, filmin ən tanınan səhnələrindən biridir.`,
+    readBtn: "Brilyant əl haqqında öyrən",
+    reading: "Oxuyuram...",
+    startBtn: "Oyuna başla",
+    coins: "Sikkələr",
+    winTitle: "Təbriklər!",
+    winText: "Sən bütün sikkələri topladın!",
+    playAgain: "Yenidən oyna",
+    speechLang: "az-AZ"
+  }
+};
+
+let currentLang = "ru";
+
+function t(key){
+  return translations[currentLang][key];
+}
+
+function chooseLanguage(lang){
+  currentLang = lang;
+  document.documentElement.lang = lang;
+
+  document.getElementById("languageScreen").style.display = "none";
+  document.getElementById("mainContent").style.display = "block";
+
+  applyTexts();
+}
+
+function applyTexts(){
+  document.getElementById("languageTitle").textContent = t("languageTitle");
+  document.getElementById("infoTitle").textContent = t("infoTitle");
+  document.getElementById("infoText").textContent = t("infoText");
+  document.getElementById("readBtn").textContent = t("readBtn");
+  document.getElementById("startBtn").textContent = t("startBtn");
+  document.getElementById("score").textContent = `${t("coins")}: 0 / 20`;
+  document.getElementById("winTitle").textContent = t("winTitle");
+  document.getElementById("winText").textContent = t("winText");
+  document.getElementById("playAgainBtn").textContent = t("playAgain");
+}
+
+/* ===== carousel simple ===== */
+(function carouselLoop(){
+  const imgs = document.querySelectorAll('#carousel img');
+  let i=0;
+
+  setInterval(()=>{
+    imgs[i].classList.remove('active');
+    i=(i+1)%imgs.length;
+    imgs[i].classList.add('active');
+  },4000);
+})();
+
+/* ===== UI elements ===== */
+const readBtn = document.getElementById('readBtn');
+const startBtn = document.getElementById('startBtn');
+const infoBox = document.getElementById('infoBox');
+const infoText = document.getElementById('infoText');
+const gameWrap = document.getElementById('gameWrap');
+const gameInner = document.getElementById('gameInner');
+const player = document.getElementById('player');
+const hud = document.getElementById('hud');
+const scoreEl = document.getElementById('score');
+const controls = document.getElementById('controls');
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
+
+let synth = window.speechSynthesis;
+
+function speak(text, onEnd){
+  try{ synth.cancel(); }catch(e){}
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = t("speechLang");
+  u.rate = 1;
+  u.onend = onEnd;
+
+  synth.speak(u);
+}
+
+readBtn.addEventListener('click', ()=>{
+  readBtn.disabled = true;
+  readBtn.textContent = t("reading");
+
+  const fullText = document.getElementById("infoTitle").innerText + ". " + infoText.innerText;
+
+  speak(fullText, ()=>{
+    infoBox.style.transition = 'opacity .4s ease';
+    infoBox.style.opacity = '0';
+
+    document.getElementById('carousel').style.transition = 'opacity .4s ease';
+    document.getElementById('carousel').style.opacity = '0';
+
+    setTimeout(()=>{
+      infoBox.style.display = 'none';
+      document.getElementById('carousel').style.display = 'none';
+      startBtn.style.display = 'inline-block';
+      readBtn.style.display = 'none';
+    },420);
+  });
+});
+
+startBtn.addEventListener('click', ()=>{
+  document.getElementById('mainContent').style.display = 'none';
+
+  gameWrap.style.display = 'block';
+  hud.style.display = 'flex';
+  controls.style.display = 'flex';
+  startBtn.style.display = 'none';
+
+  initGame();
+});
+
+/* ===== GAME ===== */
+function initGame(){
+  const playerSize = window.innerWidth <= 520 ? 44 : 52;
+  const coinSize = window.innerWidth <= 520 ? 38 : 44;
+
+  const GAME = {
+    width: gameInner.clientWidth,
+    height: gameInner.clientHeight,
+    playerX: 0,
+    playerY: 0,
+    playerW: playerSize,
+    playerH: playerSize,
+    speed: 380,
+    coins: [],
+    score: 0,
+    target: 20,
+    running: true,
+    lastTime: null
+  };
+
+  scoreEl.textContent = `${t("coins")}: ${GAME.score} / ${GAME.target}`;
+
+  GAME.playerX = Math.floor((GAME.width - GAME.playerW)/2);
+  GAME.playerY = GAME.height - GAME.playerH - 8;
+  player.style.left = GAME.playerX + 'px';
+  player.style.top = GAME.playerY + 'px';
+
+  window.addEventListener('resize', ()=> {
+    GAME.width = gameInner.clientWidth;
+    GAME.height = gameInner.clientHeight;
+  });
+
+  function spawnCoin(){
+    if(!GAME.running) return;
+
+    const el = document.createElement('div');
+    el.className = 'coin';
+    el.textContent = "🪙";
+
+    const left = Math.random()*(GAME.width - coinSize);
+
+    el.style.left = left + 'px';
+    el.style.top = '-60px';
+    el.style.opacity = '0';
+
+    gameInner.appendChild(el);
+
+    requestAnimationFrame(()=> el.style.opacity='1');
+
+    const coinObj = {
+      el,
+      x:left,
+      y:-60,
+      vy: 60 + Math.random()*60
+    };
+
+    GAME.coins.push(coinObj);
+  }
+
+  function update(dt){
+    for(let i=GAME.coins.length-1;i>=0;i--){
+      const c = GAME.coins[i];
+
+      c.y += c.vy * dt;
+      c.vy += 20*dt;
+      c.el.style.top = c.y + 'px';
+
+      const pRect = {
+        left: GAME.playerX,
+        right: GAME.playerX + GAME.playerW,
+        top: GAME.playerY,
+        bottom: GAME.playerY + GAME.playerH
+      };
+
+      const cRect = {
+        left: c.x,
+        right: c.x + coinSize,
+        top: c.y,
+        bottom: c.y + coinSize
+      };
+
+      const collided = !(
+        pRect.right < cRect.left ||
+        pRect.left > cRect.right ||
+        pRect.bottom < cRect.top ||
+        pRect.top > cRect.bottom
+      );
+
+      if(collided){
+        GAME.score++;
+        scoreEl.textContent = `${t("coins")}: ${GAME.score} / ${GAME.target}`;
+
+        c.el.style.transition = 'transform .18s ease, opacity .25s ease';
+        c.el.style.transform = 'scale(1.4)';
+        c.el.style.opacity = '0';
+
+        setTimeout(()=>{
+          try{ c.el.remove(); }catch(e){}
+        },250);
+
+        GAME.coins.splice(i,1);
+
+        if(GAME.score >= GAME.target){
+          GAME.running = false;
+
+          setTimeout(()=>{
+            document.getElementById("winOverlay").classList.add("show");
+          },150);
+        }
+
+      }else if(c.y > GAME.height + 60){
+        try{ c.el.remove(); }catch(e){}
+        GAME.coins.splice(i,1);
+      }
+    }
+  }
+
+  const keys = {
+    left:false,
+    right:false
+  };
+
+  function movePlayer(dt){
+    let dx = 0;
+
+    if(keys.left) dx -= GAME.speed * dt;
+    if(keys.right) dx += GAME.speed * dt;
+
+    GAME.playerX = Math.max(0, Math.min(GAME.width - GAME.playerW, GAME.playerX + dx));
+    player.style.left = GAME.playerX + 'px';
+  }
+
+  function loop(ts){
+    if(!GAME.running) return;
+
+    if(!GAME.lastTime) GAME.lastTime = ts;
+
+    const dt = Math.min(0.05, (ts - GAME.lastTime)/1000);
+
+    GAME.lastTime = ts;
+
+    movePlayer(dt);
+    update(dt);
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+
+  const spawner = setInterval(()=> {
+    if(!GAME.running) {
+      clearInterval(spawner);
+      return;
+    }
+
+    spawnCoin();
+  }, 700);
+
+  leftBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); keys.left = true; });
+  leftBtn.addEventListener('touchend', ()=> keys.left = false);
+
+  rightBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); keys.right = true; });
+  rightBtn.addEventListener('touchend', ()=> keys.right = false);
+
+  leftBtn.addEventListener('mousedown', ()=> keys.left = true);
+  leftBtn.addEventListener('mouseup', ()=> keys.left = false);
+  leftBtn.addEventListener('mouseleave', ()=> keys.left = false);
+
+  rightBtn.addEventListener('mousedown', ()=> keys.right = true);
+  rightBtn.addEventListener('mouseup', ()=> keys.right = false);
+  rightBtn.addEventListener('mouseleave', ()=> keys.right = false);
+
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+
+  function onKeyDown(e){
+    if(e.key === 'ArrowLeft') keys.left = true;
+    if(e.key === 'ArrowRight') keys.right = true;
+  }
+
+  function onKeyUp(e){
+    if(e.key === 'ArrowLeft') keys.left = false;
+    if(e.key === 'ArrowRight') keys.right = false;
+  }
+
+  const stopWatcher = setInterval(()=>{
+    if(!GAME.running){
+      GAME.coins.forEach(c=>{
+        try{ c.el.remove(); }catch(e){}
+      });
+
+      GAME.coins = [];
+
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+
+      clearInterval(stopWatcher);
+    }
+  },500);
+}
+</script>
+</body>
+</html>
